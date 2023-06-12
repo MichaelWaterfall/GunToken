@@ -1,30 +1,24 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { TestContract } from '../typechain-types';
+import { ERC20, GunToken } from '../typechain-types';
 
 describe('Contract', () => {
   let accounts: SignerWithAddress[];
-  let contract: TestContract;
+  let contract: GunToken;
+  let token: ERC20;
 
   before(async () => {
     accounts = await ethers.getSigners();
-    const factory = await ethers.getContractFactory('TestContract');
-    contract = (await factory.deploy(1)) as TestContract;
+    const factory = await ethers.getContractFactory('GunToken');
+    contract = (await factory.deploy()) as GunToken;
+    token = (await ethers.getContractAt('ERC20', '0xA7554e3C507E2b53C1056E642F9C94e27c7689E9')) as ERC20;
   });
 
-  it('only owner should be able to increment', async () => {
-    await expect(contract.connect(accounts[1]).increase(2)).to.be.revertedWith('Ownable: caller is not the owner');
-  });
-
-  it('should not be able to pass lower or equal number', async () => {
-    await expect(contract.increase(1)).to.be.revertedWithCustomError(contract, 'OnlyIncrease').withArgs(1, 1);
-  });
-
-  it('should be able to increase', async () => {
-    const num = await contract.x();
-    await contract.increase(2);
-    const newNum = await contract.x();
-    expect(num.lt(newNum)).to.be.true;
+  it('should run drop function', async () => {
+    const recipients = [accounts[0].address, accounts[1].address, accounts[2].address];
+    console.log(await token.balanceOf(contract.owner()));
+    await token.approve(contract.address, 3);
+    await contract.drop(token.address, recipients);
   });
 });
